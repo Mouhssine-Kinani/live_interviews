@@ -11,6 +11,9 @@
     "type": "git",
     "url": "git+https://github.com/Mouhssine-Kinani/live_interviews.git"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
