@@ -1,17 +1,20 @@
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/react'
+import { useUser, SignInButton, SignUpButton, UserButton } from '@clerk/react'
 
 function App() {
+  const { isSignedIn } = useUser()
+
   return (
     <>
       <h1>welcome to the app </h1>
-      <SignedOut>
-        <SignInButton mode='modal'/>
-        <br/>
-        <SignUpButton/>
-      </SignedOut>
-      <SignedIn>
+      {isSignedIn ? (
         <UserButton/>
-      </SignedIn>
+      ) : (
+        <>
+          <SignInButton mode='modal'/>
+          <br/>
+          <SignUpButton/>
+        </>
+      )}
     </>
   )
 }
