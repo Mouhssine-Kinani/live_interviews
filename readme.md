@@ -8,18 +8,21 @@ Monorepo with two packages:
 
 ```
 live_interviews/
-├── backend/          # Express 5 API server
+├── backend/                  # Express 5 API server
 │   └── src/
-│       ├── server.js     # Entry point, static file serving in production
+│       ├── server.js             # Entry point, middleware, Inngest endpoint
+│       ├── models/
+│       │   └── User.model.js     # Mongoose User schema
 │       └── lib/
-│           ├── env.js    # Environment config (dotenv)
-│           └── db.js     # MongoDB/Mongoose connection
-├── frontend/         # React 19 + Vite 8 SPA
+│           ├── env.js            # Environment config (dotenv)
+│           ├── db.js             # MongoDB/Mongoose connection
+│           └── inngest.js        # Inngest functions (user sync/delete)
+├── frontend/                 # React 19 + Vite 8 SPA
 │   └── src/
-│       ├── main.jsx      # Root with ClerkProvider
-│       ├── App.jsx       # SignInButton / SignUpButton
-│       └── index.css     # Global styles (light/dark theme)
-└── package.json      # Root monorepo orchestrator
+│       ├── main.jsx              # Root with ClerkProvider
+│       ├── App.jsx               # SignInButton / SignUpButton
+│       └── index.css             # Global styles
+└── package.json              # Root monorepo orchestrator
 ```
 
 ## Tech Stack
@@ -31,19 +34,21 @@ live_interviews/
 | Database | MongoDB Atlas + Mongoose 9 |
 | Frontend | React 19 + Vite 8 |
 | Auth | Clerk |
-| Video/Chat | Stream (GetStream.io) — configured |
-| Background Jobs | Inngest — configured |
+| Video/Chat | Stream (GetStream.io) — env configured |
+| Background Jobs | Inngest — implemented |
 
-## Current State
+## Implemented
 
-Scaffold stage. Implemented:
-- Express backend with MongoDB connection
+- Express backend with CORS, JSON middleware, MongoDB connection
 - React frontend with Clerk authentication (Sign In / Sign Up)
+- **Inngest integration** — `sync-user` and `delete-user-from-db` functions triggered by Clerk webhooks (`clerk/user.created`, `clerk/user.deleted`)
+- **User model** — persisted to MongoDB with `clerkId`, `name`, `email`, `profileImage`
 - Production build workflow (backend serves built frontend)
 
-Planned (env vars exist, not yet coded):
+## Planned
+
 - Real-time video/chat via Stream
-- Event-driven background jobs via Inngest
+- Additional Inngest functions (sync with Stream)
 
 ## Scripts
 
