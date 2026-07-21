@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "aihubmix": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "AIHubMix",
+      "options": {
+        "baseURL": "https://aihubmix.com/v1",
+        "apiKey": "{env:AIHUBMIX_API_KEY}"
+      },
+      "models": {
+        "coding-kimi-k3-free": {
+          "name": "Kimi K3 Coding (Free)"
+        },
+        "gpt-5.5-free": {
+          "name": "GPT-5.5 (Free)"
+        },
+        "coding-glm-5.2-free": {
+          "name": "GLM 5.2 Coding (Free)"
+        }
+      }
+    }
+  },
+  "model": "aihubmix/coding-kimi-k3-free"
+}

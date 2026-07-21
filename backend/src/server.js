@@ -2,6 +2,7 @@ import express from "express"
 import path from "path"
 
 import { ENV } from "./lib/env.js";
+import { connectDB } from "./lib/db.js";
 
 const app = express();
 
@@ -20,6 +21,14 @@ app.get("/",  (req,res)=>{
     res.status(200).json({msg:"sucess from backend"});
 })
 
-app.listen(ENV.PORT,()=>{
-    console.log(`server is runnin on http://localhost:${ENV.PORT}`);
-})
+
+const startServer = async ()=>{
+    try {
+        await connectDB();
+        app.listen(ENV.PORT,()=>{console.log(`server is running ✅🌐 on http://localhost:${ENV.PORT}`); })
+    } catch (error) {
+       console.error("⛔⛔ error starting the server"); 
+    }
+}
+
+startServer();
