@@ -13,7 +13,7 @@ const __dirname = path.resolve();
 //middelware
 app.use(express.json());
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
-app.use("/api/inngest ",serve({ client: inngest, functions}))
+app.use("/api/inngest",serve({ client: inngest, functions}))
 
 //make my app ready for deployment :
 if (ENV.NODE_ENV === "production") {
