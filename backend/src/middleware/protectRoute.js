@@ -5,15 +5,15 @@ export const protectRoute = async (req, res, next) => {
   try {
     const { isAuthenticated, userId } = getAuth(req);
     if (!isAuthenticated)
-      return res.status(401).json({ msg: "Unauthorized - invalid token" });
+      return res.status(401).json({ message: "Unauthorized - invalid token" });
 
     const user = await User.findOne({ clerkId: userId });
-    if (!user) return res.status(404).json({ msg: "User Not found" });
+    if (!user) return res.status(404).json({ message: "User Not found" });
 
     req.user = user;
     next();
   } catch (error) {
     console.error("Error in protect route middleware");
-    res.status(500).json({ msg: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
