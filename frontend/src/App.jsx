@@ -24,7 +24,7 @@ function App() {
     <>
       <Toaster toastOptions={{ duration: 3000 }} />
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={isSignedIn ? <Navigate to="/dashboard" /> : <HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route
