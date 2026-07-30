@@ -1,6 +1,6 @@
 // Piston API is a service for code execution
 
-const PISTON_API = "/piston-api";
+const PISTON_API = import.meta.env.VITE_PISTON_API_URL || "/piston-api";
 
 const LANGUAGE_VERSIONS = {
   javascript: { language: "javascript", version: "18.15.0" },

@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/piston-api": {
-        target: "http://localhost:2000",
+        target: import.meta.env.VITE_PISTON_API_TARGET || "http://localhost:2000",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/piston-api/, "/api/v2"),
       },
