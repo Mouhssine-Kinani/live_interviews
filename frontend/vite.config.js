@@ -7,10 +7,9 @@ export default defineConfig({
   plugins: [react(),tailwindcss(),],
   server: {
     proxy: {
-      "/piston-api": {
-        target: import.meta.env.VITE_PISTON_API_TARGET || "http://localhost:2000",
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/piston-api/, "/api/v2"),
       },
     },
   },

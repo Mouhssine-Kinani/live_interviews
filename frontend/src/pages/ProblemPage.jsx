@@ -88,7 +88,7 @@ function ProblemPage() {
         toast.error("Tests failed. Check your output!");
       }
     } else {
-      toast.error("Code execution failed!");
+      toast.error(result.error || "Code execution failed!");
     }
   };
 
