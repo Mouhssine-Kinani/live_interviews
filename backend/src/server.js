@@ -10,6 +10,7 @@ import { inngest , functions} from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chat.routes.js"
 import sessionRoutes from "./routes/session.routes.js"
+import codeRoutes from "./routes/code.routes.js"
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(clerkMiddleware())
 app.use("/api/inngest", serve({ client: inngest, functions}))
 app.use("/api/chat", chatRoutes)
 app.use("/api/sessions", sessionRoutes)
+app.use("/api", codeRoutes)
 
 //make my app ready for deployment :
 if (ENV.NODE_ENV === "production") {
