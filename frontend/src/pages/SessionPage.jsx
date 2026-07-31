@@ -1,10 +1,10 @@
 import { useUser } from "@clerk/clerk-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/NavBar";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
@@ -90,14 +90,12 @@ function SessionPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState("");
 
-  // Reset code when the problem changes (during render, not in effect)
-  const problemKey = problemData?.title;
-  const prevProblemKeyRef = useRef(problemKey);
-
-  if (problemKey && problemKey !== prevProblemKeyRef.current) {
-    prevProblemKeyRef.current = problemKey;
-    setCode(problemData?.starterCode?.[selectedLanguage] || "");
-  }
+  useEffect(() => {
+    if (problemData?.starterCode?.[selectedLanguage]) {
+      setCode(problemData.starterCode[selectedLanguage]);
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+  }, [problemData, selectedLanguage]);
 
   // auto-join session if user is not already a participant and not the host
   useEffect(() => {
