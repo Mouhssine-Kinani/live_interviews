@@ -1,4 +1,5 @@
 import { chatClient, streamClient } from "../lib/stream.js";
+import { getIO } from "../lib/socket.js";
 import Session from "../models/Session.model.js";
 
 export async function createSession(req, res) {
@@ -33,6 +34,8 @@ export async function createSession(req, res) {
     });
 
     await channel.create();
+
+    getIO().emit("sessions:changed");
 
     res.status(201).json({ session });
   } catch (error) {
@@ -119,6 +122,8 @@ export async function joinSession(req, res) {
     const channel = chatClient.channel("messaging", session.callId);
     await channel.addMembers([clerkId]);
 
+    getIO().emit("sessions:changed");
+
     res.status(200).json({ session });
   } catch (error) {
     console.log("Error in joinSession controller:", error.message);
@@ -155,6 +160,8 @@ export async function endSession(req, res) {
 
     session.status = "completed";
     await session.save();
+
+    getIO().emit("sessions:changed");
 
     res.status(200).json({ session, message: "Session ended successfully" });
   } catch (error) {

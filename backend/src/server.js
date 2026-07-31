@@ -2,12 +2,12 @@ import express from "express";
 import { createServer } from "node:http";
 import path from "path";
 import cors from "cors";
-import { Server } from "socket.io";
 import { serve } from "inngest/express"
 import { clerkMiddleware } from '@clerk/express'
 
 import { ENV } from "./lib/env.js";
 import { connectDB } from "./lib/db.js";
+import { initializeSocket } from "./lib/socket.js";
 import { inngest , functions} from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chat.routes.js"
@@ -16,9 +16,7 @@ import codeRoutes from "./routes/code.routes.js"
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: ENV.CLIENT_URL || "http://localhost:5173", credentials: true },
-});
+const io = initializeSocket(httpServer);
 const editorStates = new Map();
 
 const __dirname = path.resolve();
