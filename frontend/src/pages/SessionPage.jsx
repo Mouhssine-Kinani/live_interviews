@@ -1,8 +1,8 @@
 import { useUser } from "@clerk/clerk-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
-import { PROBLEMS } from "../data/problems";
+import { LANGUAGE_CONFIG, PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
 import Navbar from "../components/NavBar";
 import { Group, Panel, Separator } from "react-resizable-panels";
@@ -89,12 +89,88 @@ function SessionPage() {
 
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
   const [code, setCode] = useState("");
+  const codeRef = useRef(code);
+  const languageRef = useRef(selectedLanguage);
+  const skipStarterCodeRef = useRef(false);
+  const syncTimeoutRef = useRef(null);
+
+  const updateEditor = useCallback((nextCode, nextLanguage = languageRef.current) => {
+    codeRef.current = nextCode;
+    languageRef.current = nextLanguage;
+    setCode(nextCode);
+    setSelectedLanguage(nextLanguage);
+  }, []);
+
+  const sendEditorUpdate = useCallback(
+    (nextCode = codeRef.current, nextLanguage = languageRef.current, immediately = false) => {
+      if (!channel) return;
+
+      const send = () => {
+        channel
+          .sendEvent({
+            type: "code_editor.update",
+            editor: { code: nextCode, language: nextLanguage },
+          })
+          .catch((error) => console.error("Unable to sync code editor", error));
+      };
+
+      window.clearTimeout(syncTimeoutRef.current);
+      if (immediately) {
+        send();
+      } else {
+        // Batch keystrokes so the shared channel is not flooded with events.
+        syncTimeoutRef.current = window.setTimeout(send, 150);
+      }
+    },
+    [channel]
+  );
 
   useEffect(() => {
+    if (!channel) return;
+
+    const updateSubscription = channel.on("code_editor.update", (event) => {
+      // Stream also delivers the sender's event locally; it has already been applied.
+      if (event.user?.id === user?.id) return;
+
+      const { code: remoteCode, language: remoteLanguage } = event.editor || {};
+      if (typeof remoteCode !== "string" || !LANGUAGE_CONFIG[remoteLanguage]) return;
+
+      window.clearTimeout(syncTimeoutRef.current);
+      // Do not replace a remote language switch with this problem's starter code.
+      skipStarterCodeRef.current = remoteLanguage !== languageRef.current;
+      updateEditor(remoteCode, remoteLanguage);
+      setOutput(null);
+    });
+
+    const requestSubscription = channel.on("code_editor.sync_request", (event) => {
+      if (event.user?.id === user?.id) return;
+      sendEditorUpdate(codeRef.current, languageRef.current, true);
+    });
+
+    // A participant who joins after editing has started asks the other caller
+    // for the current document, since custom events are not stored as messages.
+    channel
+      .sendEvent({ type: "code_editor.sync_request" })
+      .catch((error) => console.error("Unable to request code editor state", error));
+
+    return () => {
+      updateSubscription.unsubscribe();
+      requestSubscription.unsubscribe();
+      window.clearTimeout(syncTimeoutRef.current);
+    };
+  }, [channel, sendEditorUpdate, updateEditor, user?.id]);
+
+  useEffect(() => {
+    if (skipStarterCodeRef.current) {
+      skipStarterCodeRef.current = false;
+      return;
+    }
+
     if (problemData?.starterCode?.[selectedLanguage]) {
+      codeRef.current = problemData.starterCode[selectedLanguage];
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCode(problemData.starterCode[selectedLanguage]);
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [problemData, selectedLanguage]);
 
   // auto-join session if user is not already a participant and not the host
@@ -118,11 +194,17 @@ function SessionPage() {
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
-    setSelectedLanguage(newLang);
     // use problem-specific starter code
     const starterCode = problemData?.starterCode?.[newLang] || "";
-    setCode(starterCode);
+    updateEditor(starterCode, newLang);
+    sendEditorUpdate(starterCode, newLang, true);
     setOutput(null);
+  };
+
+  const handleCodeChange = (value) => {
+    const nextCode = value ?? "";
+    updateEditor(nextCode);
+    sendEditorUpdate(nextCode);
   };
 
   const handleRunCode = async () => {
@@ -268,7 +350,7 @@ function SessionPage() {
       code={code}
       isRunning={isRunning}
       onLanguageChange={handleLanguageChange}
-      onCodeChange={(value) => setCode(value)}
+      onCodeChange={handleCodeChange}
       onRunCode={handleRunCode}
     />
   );
