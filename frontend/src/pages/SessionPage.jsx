@@ -13,6 +13,7 @@ import OutputPanel from "../components/OutputPanel";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
+import { io } from "socket.io-client";
 import VideoCallUI from "../components/VideoCallUI";
 
 // Below this viewport width the split-pane layout collapses into a single
@@ -22,6 +23,7 @@ const DESKTOP_BREAKPOINT = 1024;
 // Bigger drag target for touch ("coarse") pointers so handles are easy to
 // grab on phones/tablets, while staying thin/precise for mouse ("fine") input.
 const RESIZE_HIT_AREA = { coarse: 24, fine: 8 };
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || undefined;
 
 function useIsDesktop(breakpoint = DESKTOP_BREAKPOINT) {
   const [isDesktop, setIsDesktop] = useState(
@@ -93,6 +95,8 @@ function SessionPage() {
   const languageRef = useRef(selectedLanguage);
   const skipStarterCodeRef = useRef(false);
   const syncTimeoutRef = useRef(null);
+  const socketRef = useRef(null);
+  const sessionId = session?._id;
 
   const updateEditor = useCallback((nextCode, nextLanguage = languageRef.current) => {
     codeRef.current = nextCode;
@@ -103,15 +107,14 @@ function SessionPage() {
 
   const sendEditorUpdate = useCallback(
     (nextCode = codeRef.current, nextLanguage = languageRef.current, immediately = false) => {
-      if (!channel) return;
+      if (!sessionId) return;
 
       const send = () => {
-        channel
-          .sendEvent({
-            type: "code_editor.update",
-            editor: { code: nextCode, language: nextLanguage },
-          })
-          .catch((error) => console.error("Unable to sync code editor", error));
+        socketRef.current?.emit("editor:update", {
+          sessionId,
+          code: nextCode,
+          language: nextLanguage,
+        });
       };
 
       window.clearTimeout(syncTimeoutRef.current);
@@ -122,43 +125,46 @@ function SessionPage() {
         syncTimeoutRef.current = window.setTimeout(send, 150);
       }
     },
-    [channel]
+    [sessionId]
   );
 
   useEffect(() => {
-    if (!channel) return;
+    if (!sessionId || session?.status !== "active" || (!isHost && !isParticipant)) return;
 
-    const updateSubscription = channel.on("code_editor.update", (event) => {
-      // Stream also delivers the sender's event locally; it has already been applied.
-      if (event.user?.id === user?.id) return;
+    const socket = io(SOCKET_URL, { withCredentials: true });
+    socketRef.current = socket;
 
-      const { code: remoteCode, language: remoteLanguage } = event.editor || {};
+    const applyRemoteEditor = (editor) => {
+      const { code: remoteCode, language: remoteLanguage } = editor || {};
       if (typeof remoteCode !== "string" || !LANGUAGE_CONFIG[remoteLanguage]) return;
-
       window.clearTimeout(syncTimeoutRef.current);
-      // Do not replace a remote language switch with this problem's starter code.
       skipStarterCodeRef.current = remoteLanguage !== languageRef.current;
       updateEditor(remoteCode, remoteLanguage);
       setOutput(null);
-    });
+    };
 
-    const requestSubscription = channel.on("code_editor.sync_request", (event) => {
-      if (event.user?.id === user?.id) return;
-      sendEditorUpdate(codeRef.current, languageRef.current, true);
-    });
+    const joinEditorRoom = () => {
+      socket.emit("editor:join", { sessionId }, (editor) => {
+        if (editor) {
+          applyRemoteEditor(editor);
+        } else {
+          // Store the first caller's document so a later participant receives it.
+          sendEditorUpdate(codeRef.current, languageRef.current, true);
+        }
+      });
+    };
 
-    // A participant who joins after editing has started asks the other caller
-    // for the current document, since custom events are not stored as messages.
-    channel
-      .sendEvent({ type: "code_editor.sync_request" })
-      .catch((error) => console.error("Unable to request code editor state", error));
+    socket.on("connect", joinEditorRoom);
+    socket.on("editor:update", applyRemoteEditor);
 
     return () => {
-      updateSubscription.unsubscribe();
-      requestSubscription.unsubscribe();
+      socket.off("connect", joinEditorRoom);
+      socket.off("editor:update", applyRemoteEditor);
+      socket.disconnect();
+      socketRef.current = null;
       window.clearTimeout(syncTimeoutRef.current);
     };
-  }, [channel, sendEditorUpdate, updateEditor, user?.id]);
+  }, [isHost, isParticipant, sendEditorUpdate, session?.status, sessionId, updateEditor]);
 
   useEffect(() => {
     if (skipStarterCodeRef.current) {
