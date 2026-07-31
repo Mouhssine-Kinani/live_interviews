@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
 import { PROBLEMS } from "../data/problems";
 import { executeCode } from "../lib/piston";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/NavBar";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { Loader2Icon, LogOutIcon, PhoneOffIcon } from "lucide-react";
