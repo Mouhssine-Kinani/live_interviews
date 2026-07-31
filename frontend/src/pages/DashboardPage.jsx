@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router";
 import { useUser } from "@clerk/clerk-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useActiveSessions, useCreateSession, useMyRecentSessions } from "../hooks/useSessions";
+import { createSocket } from "../lib/socket";
 
 import Navbar from "../components/NavBar";
 import WelcomeSection from "../components/WelcomeSection";
@@ -18,8 +19,24 @@ function DashboardPage() {
 
   const createSessionMutation = useCreateSession();
 
-  const { data: activeSessionsData, isLoading: loadingActiveSessions } = useActiveSessions();
+  const {
+    data: activeSessionsData,
+    isLoading: loadingActiveSessions,
+    refetch: refetchActiveSessions,
+  } = useActiveSessions();
   const { data: recentSessionsData, isLoading: loadingRecentSessions } = useMyRecentSessions();
+
+  useEffect(() => {
+    const socket = createSocket();
+    const refreshLiveSessions = () => refetchActiveSessions();
+
+    socket.on("sessions:changed", refreshLiveSessions);
+
+    return () => {
+      socket.off("sessions:changed", refreshLiveSessions);
+      socket.disconnect();
+    };
+  }, [refetchActiveSessions]);
 
   const handleCreateRoom = () => {
     if (!roomConfig.problem || !roomConfig.difficulty) return;

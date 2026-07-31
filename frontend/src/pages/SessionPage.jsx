@@ -13,7 +13,7 @@ import OutputPanel from "../components/OutputPanel";
 
 import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
-import { io } from "socket.io-client";
+import { createSocket } from "../lib/socket";
 import VideoCallUI from "../components/VideoCallUI";
 
 // Below this viewport width the split-pane layout collapses into a single
@@ -23,7 +23,6 @@ const DESKTOP_BREAKPOINT = 1024;
 // Bigger drag target for touch ("coarse") pointers so handles are easy to
 // grab on phones/tablets, while staying thin/precise for mouse ("fine") input.
 const RESIZE_HIT_AREA = { coarse: 24, fine: 8 };
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, "") || undefined;
 
 function useIsDesktop(breakpoint = DESKTOP_BREAKPOINT) {
   const [isDesktop, setIsDesktop] = useState(
@@ -131,7 +130,7 @@ function SessionPage() {
   useEffect(() => {
     if (!sessionId || session?.status !== "active" || (!isHost && !isParticipant)) return;
 
-    const socket = io(SOCKET_URL, { withCredentials: true });
+    const socket = createSocket();
     socketRef.current = socket;
 
     const applyRemoteEditor = (editor) => {
