@@ -31,8 +31,8 @@ function VideoCallUI({ chatClient, channel }) {
   }
 
   return (
-    <div className="h-full flex gap-3 relative str-video">
-      <div className="flex-1 flex flex-col gap-3">
+    <div className="h-full flex min-h-0 flex-col gap-3 lg:flex-row relative str-video">
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
         {/* Participants count badge and Chat Toggle */}
         <div className="flex items-center justify-between gap-2 bg-base-100 p-3 rounded-lg shadow">
           <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ function VideoCallUI({ chatClient, channel }) {
           )}
         </div>
 
-        <div className="flex-1 bg-base-300 rounded-lg overflow-hidden relative">
+        <div className="flex-1 min-h-48 bg-base-300 rounded-lg overflow-hidden relative">
           <SpeakerLayout />
         </div>
 
@@ -66,8 +66,8 @@ function VideoCallUI({ chatClient, channel }) {
 
       {chatClient && channel && (
         <div
-          className={`flex flex-col rounded-lg shadow overflow-hidden bg-[#272a30] transition-all duration-300 ease-in-out ${
-            isChatOpen ? "w-80 opacity-100" : "w-0 opacity-0"
+          className={`flex shrink-0 flex-col rounded-lg shadow overflow-hidden bg-[#272a30] transition-all duration-300 ease-in-out ${
+            isChatOpen ? "w-full h-64 opacity-100 lg:w-80 lg:h-auto" : "w-0 h-0 opacity-0 lg:h-auto"
           }`}
         >
           {isChatOpen && (

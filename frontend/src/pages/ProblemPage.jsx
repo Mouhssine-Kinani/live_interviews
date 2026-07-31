@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { PROBLEMS } from "../data/problems";
 import Navbar from "../components/NavBar";
@@ -12,6 +12,22 @@ import { executeCode } from "../lib/piston";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 
+const DESKTOP_BREAKPOINT = 1024;
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= DESKTOP_BREAKPOINT);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+    const update = () => setIsDesktop(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
 function ProblemPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,6 +39,7 @@ function ProblemPage() {
   const [isRunning, setIsRunning] = useState(false);
 
   const currentProblem = PROBLEMS[currentProblemId];
+  const isDesktop = useIsDesktop();
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
@@ -93,12 +110,12 @@ function ProblemPage() {
   };
 
   return (
-    <div className="h-screen bg-base-100 flex flex-col">
+    <div className="h-dvh bg-base-100 flex flex-col">
       <Navbar />
 
-      <div className="flex-1">
-        <Group orientation="horizontal">
-          <Panel defaultSize={40} minSize={30}>
+      <div className="flex-1 min-h-0">
+        <Group orientation={isDesktop ? "horizontal" : "vertical"} className="h-full">
+          <Panel defaultSize={isDesktop ? 40 : 35} minSize={isDesktop ? 30 : 20}>
             <ProblemDescription
               problem={currentProblem}
               currentProblemId={currentProblemId}
@@ -107,10 +124,12 @@ function ProblemPage() {
             />
           </Panel>
 
-          <Separator className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <Separator
+            className={`${isDesktop ? "w-2 h-full cursor-col-resize" : "h-2 w-full cursor-row-resize"} bg-base-300 hover:bg-primary transition-colors`}
+          />
 
-          <Panel defaultSize={60} minSize={30}>
-            <Group orientation="vertical">
+          <Panel defaultSize={isDesktop ? 60 : 65} minSize={isDesktop ? 30 : 30}>
+            <Group orientation="vertical" className="h-full">
               <Panel defaultSize={70} minSize={30}>
                 <CodeEditorPanel
                   selectedLanguage={selectedLanguage}

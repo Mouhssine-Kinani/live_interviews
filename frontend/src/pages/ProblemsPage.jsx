@@ -16,10 +16,10 @@ function ProblemsPage() {
     <div className="min-h-screen bg-base-200">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* HEADER */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Practice Problems</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Practice Problems</h1>
           <p className="text-base-content/70">
             Sharpen your coding skills with these curated problems
           </p>
@@ -33,17 +33,17 @@ function ProblemsPage() {
               to={`/problem/${problem.id}`}
               className="card bg-base-100 hover:scale-[1.01] transition-transform"
             >
-              <div className="card-body">
-                <div className="flex items-center justify-between gap-4">
+              <div className="card-body p-4 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   {/* LEFT SIDE */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-start gap-3 mb-2">
                       <div className="size-12 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Code2Icon className="size-6 text-primary" />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h2 className="text-xl font-bold">{problem.title}</h2>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h2 className="text-lg sm:text-xl font-bold break-words">{problem.title}</h2>
                           <span className={`badge ${getDifficultyBadgeClass(problem.difficulty)}`}>
                             {problem.difficulty}
                           </span>
@@ -55,7 +55,7 @@ function ProblemsPage() {
                   </div>
                   {/* RIGHT SIDE */}
 
-                  <div className="flex items-center gap-2 text-primary">
+                  <div className="flex items-center justify-end gap-2 text-primary sm:justify-start">
                     <span className="font-medium">Solve</span>
                     <ChevronRightIcon className="size-5" />
                   </div>

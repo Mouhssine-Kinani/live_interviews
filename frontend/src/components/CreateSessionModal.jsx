@@ -15,10 +15,10 @@ function CreateSessionModal({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
-        <h3 className="font-bold text-2xl mb-6">Create New Session</h3>
+      <div className="modal-box w-[calc(100%-2rem)] max-w-2xl p-5 sm:p-6">
+        <h3 className="font-bold text-xl sm:text-2xl mb-5 sm:mb-6">Create New Session</h3>
 
-        <div className="space-y-8">
+        <div className="space-y-5 sm:space-y-8">
           {/* PROBLEM SELECTION */}
           <div className="space-y-2">
             <label className="label">
@@ -66,13 +66,13 @@ function CreateSessionModal({
           )}
         </div>
 
-        <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+        <div className="modal-action flex-col-reverse gap-2 sm:flex-row">
+          <button className="btn btn-ghost w-full sm:w-auto" onClick={onClose}>
             Cancel
           </button>
 
           <button
-            className="btn btn-primary gap-2"
+            className="btn btn-primary gap-2 w-full sm:w-auto"
             onClick={onCreateRoom}
             disabled={isCreating || !roomConfig.problem}
           >
