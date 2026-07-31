@@ -12,4 +12,6 @@ export const sessionApi = {
   joinSession: (id) => axios.post(`/sessions/${id}/join`).then((res) => res.data),
 
   endSession: (id) => axios.post(`/sessions/${id}/end`).then((res) => res.data),
+
+  getStreamToken: () => axios.get("/chat/token").then((res) => res.data),
 };
