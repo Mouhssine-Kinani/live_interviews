@@ -1,43 +1,19 @@
-# Live Interviews
+# Live Interviews — Code Together
 
-A real-time live interview platform with video streaming, chat, authentication, and background job processing.
+A real-time 1-on-1 technical interview platform: live video calls, in-session chat, a collaborative code editor, and a solo practice workspace with multi-language code execution.
 
-## Architecture
+## Features
 
-```
-live_interviews/
-├── backend/                  # Express 5 API server
-│   └── src/
-│       ├── server.js             # Entry point, middleware, Inngest endpoint, routes
-│       ├── middleware/
-│       │   └── protectRoute.js   # Clerk auth guard middleware
-│       ├── controllers/
-│       │   ├── sessionController.js  # Session CRUD (create, join, end, list)
-│       │   └── chatController.js     # Stream chat token generation
-│       ├── models/
-│       │   ├── User.model.js     # Mongoose User schema (clerkId, name, email, profileImage)
-│       │   └── Session.model.js  # Mongoose Session schema (problem, difficulty, host, participant, callId)
-│       ├── routes/
-│       │   ├── session.routes.js # /api/sessions — create, list, join, end
-│       │   └── chat.routes.js    # /api/chat/token — Stream token
-│       └── lib/
-│           ├── env.js            # Environment config (dotenv)
-│           ├── db.js             # MongoDB/Mongoose connection
-│           ├── inngest.js        # Inngest functions (sync/delete user with Stream)
-│           └── stream.js         # Stream Chat & Video SDK clients
-├── frontend/                 # React 19 + Vite 8 SPA
-│   └── src/
-│       ├── main.jsx              # Root with ClerkProvider, BrowserRouter, QueryClientProvider
-│       ├── App.jsx               # Routes (/, /about, /problems), Toaster, auth guard
-│       ├── index.css             # Tailwind CSS v4 + DaisyUI
-│       ├── lib/
-│       │   └── axios.js          # Axios instance (baseURL, credentials)
-│       └── pages/
-│           ├── HomePage.jsx      # Home with Clerk auth buttons (SignIn, SignOut, UserButton)
-│           ├── AboutPage.jsx     # About placeholder
-│           └── ProblemsPage.jsx  # Problems placeholder (protected route)
-└── package.json              # Root monorepo orchestrator (build, start)
-```
+- **Live interview rooms** — 1-on-1 sessions with a shared problem statement, host/participant roles, and session lifecycle (create → join → end)
+- **Real-time video calls** — powered by Stream Video (GetStream.io), with participant grid and call controls
+- **In-session chat** — Stream Chat channel created per session, opened only to the host and participant
+- **Collaborative code editor** — Monaco editor synchronized over Socket.IO (join/update events, debounced sync), with language selection (JavaScript, Python, Java)
+- **Code execution** — run code in the browser, executed server-side (`/api/execute`) via sandboxed JS evaluation or local `python3`/`javac` child processes, with test-case comparison and confetti on success
+- **Solo practice workspace** — 23 curated LeetCode-style problems (Easy/Medium/Hard) with descriptions, examples, constraints, starter code, and expected outputs
+- **Live dashboard** — active sessions list refreshed in real time via Socket.IO (`sessions:changed`), recent session history, and session stats
+- **Authentication** — Clerk (sign-in modal, user button, protected routes, webhook-driven user sync)
+- **Theme picker** — 35 daisyUI themes persisted to `localStorage`
+- **Responsive UI** — resizable panels that adapt to mobile (react-resizable-panels)
 
 ## Tech Stack
 
@@ -48,57 +24,114 @@ live_interviews/
 | Database | MongoDB Atlas + Mongoose 9 | https://www.mongodb.com — https://mongoosejs.com |
 | Frontend | React 19 + Vite 8 | https://react.dev — https://vite.dev |
 | Auth | Clerk (Express + React SDKs) | https://clerk.com |
-| Video/Chat | Stream (GetStream.io) — Chat SDK + Video SDK | https://getstream.io |
+| Video | Stream Video SDK (`@stream-io/video-react-sdk`, `@stream-io/node-sdk`) | https://getstream.io |
+| Chat | Stream Chat SDK (`stream-chat`, `stream-chat-react`) | https://getstream.io |
+| Realtime Editor Sync | Socket.IO | https://socket.io |
+| Code Execution | Custom: `node:vm` sandbox + child processes | — |
 | Background Jobs | Inngest | https://www.inngest.com |
+| Code Editor | Monaco (`@monaco-editor/react`) | https://microsoft.github.io/monaco-editor |
 | Styling | Tailwind CSS v4 + DaisyUI | https://tailwindcss.com — https://daisyui.com |
 | Data Fetching | TanStack React Query | https://tanstack.com/query |
 | HTTP Client | Axios | https://axios-http.com |
+| UI Helpers | react-resizable-panels, react-hot-toast, canvas-confetti, date-fns, lucide-react | — |
 
-## Implemented
+## Architecture
 
-### Backend
-- Express server with CORS, JSON middleware, Clerk auth middleware
-- MongoDB connection via Mongoose
-- **Clerk authentication** — `clerkMiddleware` on all requests, `protectRoute` guard on API routes
-- **User model** — persisted to MongoDB with `clerkId`, `name`, `email`, `profileImage`
-- **Session model** — `problem`, `difficulty`, `host`, `participant`, `status`, `callId`
-- **Session API** — `POST /api/sessions` (create), `GET /api/sessions/active`, `GET /api/sessions/my-recent`, `GET /api/sessions/:id`, `POST /api/sessions/:id/join`, `POST /api/sessions/:id/end`
-- **Chat API** — `GET /api/chat/token` (generate Stream user token)
-- **Inngest integration** — `sync-user` (create User in DB + upsert in Stream on `clerk/user.created`), `delete-user-from-db` (delete from DB + Stream on `clerk/user.deleted`)
-- **Stream integration** — video call creation/deletion on session lifecycle, chat channel creation with members, user sync via Inngest
-- Production build workflow (backend serves built frontend)
+```
+live_interviews/
+├── backend/                  # Express 5 API server (ESM)
+│   └── src/
+│       ├── server.js             # Entry point: Express + HTTP + Socket.IO + Inngest serve + SPA fallback (prod)
+│       ├── middleware/
+│       │   └── protectRoute.js   # Clerk auth guard (401 if unauthenticated, 404 if user not in DB)
+│       ├── controllers/
+│       │   ├── sessionController.js  # Session lifecycle + Stream video call/chat channel creation
+│       │   ├── chatController.js     # Stream chat token generation
+│       │   └── codeController.js     # Code execution (JS sandbox / Python / Java)
+│       ├── models/
+│       │   ├── User.model.js     # clerkId, name, email, profileImage
+│       │   └── Session.model.js  # problem, difficulty, host, participant, status, callId
+│       ├── routes/
+│       │   ├── session.routes.js # /api/sessions — create, list, join, end
+│       │   ├── chat.routes.js    # /api/chat/token — Stream token
+│       │   └── code.routes.js    # /api/execute — run code
+│       └── lib/
+│           ├── env.js            # Environment config (dotenv)
+│           ├── db.js             # MongoDB/Mongoose connection
+│           ├── socket.js         # Socket.IO server factory (initializeSocket/getIO)
+│           ├── inngest.js        # Inngest functions (sync/delete user with Stream)
+│           └── stream.js         # Stream Video + Chat SDK clients
+├── frontend/                 # React 19 + Vite 8 SPA
+│   └── src/
+│       ├── main.jsx              # ClerkProvider + BrowserRouter + QueryClientProvider
+│       ├── App.jsx               # Routes + auth guards + Toaster
+│       ├── index.css             # Tailwind CSS v4 + DaisyUI
+│       ├── api/sessions.js       # Axios calls for sessions + Stream token
+│       ├── data/problems.js      # 23 problems + LANGUAGE_CONFIG
+│       ├── hooks/
+│       │   ├── useSessions.js    # React Query hooks for sessions
+│       │   └── useStreamClient.js# Stream video call + chat channel init
+│       ├── lib/
+│       │   ├── axios.js          # Axios instance (baseURL, credentials)
+│       │   ├── socket.js         # Socket.IO client factory
+│       │   ├── stream.js         # Stream Video client singleton
+│       │   ├── piston.js         # Code execution client (/api/execute)
+│       │   └── utils.js          # Difficulty badge helper
+│       ├── components/           # NavBar, VideoCallUI, CodeEditorPanel, OutputPanel,
+│       │                         # ProblemDescription, CreateSessionModal, ActiveSessions,
+│       │                         # RecentSessions, StatsCards, WelcomeSection
+│       └── pages/
+│           ├── HomePage.jsx      # Public landing page
+│           ├── DashboardPage.jsx # Stats, active/recent sessions, create session
+│           ├── ProblemsPage.jsx  # Problem list
+│           ├── ProblemPage.jsx   # Solo practice workspace
+│           └── SessionPage.jsx   # Live 1-on-1 interview room
+└── package.json              # Root monorepo orchestrator (build, start)
+```
 
-### Frontend
-- React 19 with Vite 8 (HMR)
-- **Clerk authentication** — `ClerkProvider`, `useUser`, `SignedIn`/`SignedOut`, `SignInButton` (modal), `SignOutButton`, `UserButton`
-- **React Router** v8 — routes for `/` (HomePage), `/about`, `/problems` (auth-protected)
-- **TanStack React Query** — `QueryClientProvider` wrapping the app
-- **react-hot-toast** — toast notifications with `<Toaster />`
-- **Axios instance** — pre-configured with `baseURL` and `withCredentials: true`
-- **Tailwind CSS v4 + DaisyUI** — utility-first styling
+## API Reference
 
-## Planned
+All endpoints except the health check and the Inngest webhook require Clerk authentication (`protectRoute`).
 
-- Full interview workspace UI (code editor, video panel, chat)
-- Additional Inngest functions
-- Deployment configuration
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/` | Health check |
+| POST | `/api/inngest` | Inngest dev server (Clerk webhooks) |
+| POST | `/api/sessions` | Create a session + Stream video call + chat channel — body `{ problem, difficulty }` |
+| GET | `/api/sessions/active` | List up to 20 active sessions (host/participant populated) |
+| GET | `/api/sessions/my-recent` | List up to 20 recent sessions of the current user |
+| GET | `/api/sessions/:id` | Get one session (populated) |
+| POST | `/api/sessions/:id/join` | Join as participant (+ add to Stream channel) |
+| POST | `/api/sessions/:id/end` | End session (host only; hard-deletes Stream call + channel) |
+| GET | `/api/chat/token` | Stream chat token + user info |
+| POST | `/api/execute` | Execute code — body `{ language: "javascript"\|"python"\|"java", code }` |
 
-## Scripts
+### Socket.IO events
 
-### Root
-- `npm run build` — install deps for both packages + build frontend
-- `npm run start` — start backend in production mode
+| Event | Direction | Payload | Purpose |
+|-------|-----------|---------|---------|
+| `editor:join` | client → server | `{ sessionId }` (ack → current `{ code, language }`) | Join the editor room, get current state |
+| `editor:update` | client ↔ server | `{ sessionId, code, language }` | Real-time collaborative code sync (relayed to other peers) |
+| `sessions:changed` | server → client | — | Broadcast after create/join/end — tells dashboards to refresh |
 
-### Backend
-- `npm run dev` — nodemon dev server
-- `npm run start` — production start
+### Inngest functions
 
-### Frontend
-- `npm run dev` — Vite dev server (HMR)
-- `npm run build` — production build
-- `npm run lint` — ESLint
+| Function | Trigger | Actions |
+|----------|---------|---------|
+| `sync-user` | `clerk/user.created` | Create User in MongoDB + upsert in Stream Chat |
+| `delete-user-from-db` | `clerk/user.deleted` | Delete User from MongoDB + Stream Chat |
 
-## Quick Start
+## Routes (Frontend)
+
+| Route | Page | Access |
+|-------|------|--------|
+| `/` | HomePage (landing) | Public |
+| `/dashboard` | DashboardPage | Authenticated |
+| `/problems` | ProblemsPage | Authenticated |
+| `/problem/:id` | ProblemPage (practice workspace) | Authenticated |
+| `/session/:id` | SessionPage (live interview room) | Authenticated |
+
+## Getting Started
 
 ```bash
 # 1. Clone the repository
@@ -118,6 +151,31 @@ npm run build
 npm run start
 ```
 
+### Environment Variables
+
+**Backend (`.env`):**
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | Server port (default 3000) |
+| `NODE_ENV` | `development` or `production` |
+| `DB_URL` | MongoDB Atlas connection string |
+| `INNGEST_EVENT_KEY` | Inngest app key |
+| `INNGEST_SIGNING_KEY` | Inngest signing key |
+| `STREAM_API_KEY` | GetStream.io dashboard |
+| `STREAM_API_SECRET` | GetStream.io dashboard |
+| `CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API Keys |
+| `CLERK_SECRET_KEY` | Clerk dashboard → API Keys (server-side) |
+| `CLIENT_URL` | `http://localhost:5173` (dev) / deployed frontend URL (prod) |
+
+**Frontend (`.env`):**
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk dashboard → API Keys |
+| `VITE_API_URL` | `http://localhost:3000` (dev) / deployed backend URL (prod) |
+| `VITE_STREAM_API_KEY` | GetStream.io dashboard |
+
 ### Development
 
 Run backend and frontend separately for hot-reload:
@@ -127,17 +185,30 @@ Run backend and frontend separately for hot-reload:
 cd backend
 npm run dev
 
-# Terminal 2 — Frontend (Vite dev server, port 5173)
+# Terminal 2 — Frontend (Vite dev server, port 5173, proxies /api and /socket.io)
 cd frontend
 npm run dev
 ```
 
 Then open http://localhost:5173 in your browser.
 
-## Setup Details
+## Scripts
 
-1. **Clone** the repo and `cd` into it.
-2. Copy `.env.example` → `.env` in both `backend/` and `frontend/`.
-3. Fill in the required credentials in each `.env` file (see comments in `.env.example` for where to get each key).
-4. Run `npm run build` (root) to install all dependencies and build the frontend.
-5. Run `npm run start` (root) to start the production server.
+### Root
+- `npm run build` — install deps for both packages + build frontend
+- `npm run start` — start backend in production mode
+
+### Backend
+- `npm run dev` — nodemon dev server
+- `npm run start` — production start
+
+### Frontend
+- `npm run dev` — Vite dev server (HMR)
+- `npm run build` — production build
+- `npm run lint` — ESLint
+
+## Notes
+
+- **Clerk webhooks**: the Inngest functions are triggered by Clerk webhooks (`clerk/user.created`, `clerk/user.deleted`) — configure them in the Clerk dashboard pointing to `<backend>/api/inngest`, and run `npx inngest-cli dev` locally to test.
+- **Code execution**: the backend runs JavaScript in a `node:vm` sandbox, and Python/Java via local `python3`/`javac` binaries — the server host must have those installed. Executions are limited to a 10 s timeout.
+- **Editor state** is kept in memory on the server — it resets when the backend restarts.

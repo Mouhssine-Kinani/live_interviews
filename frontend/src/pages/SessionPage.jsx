@@ -235,9 +235,9 @@ function SessionPage() {
     <div className="h-full overflow-y-auto bg-base-200">
       {/* HEADER SECTION */}
       <div className="p-4 sm:p-6 bg-base-100 border-b border-base-300">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-0 mb-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-base-content">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3 mb-3">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-base-content break-words">
               {session?.problem || "Loading..."}
             </h1>
             {problemData?.category && (
@@ -249,7 +249,7 @@ function SessionPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:shrink-0">
             <span
               className={`badge badge-lg ${getDifficultyBadgeClass(
                 session?.difficulty

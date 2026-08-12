@@ -7,7 +7,7 @@ import {
 import { Loader2Icon, MessageSquareIcon, UsersIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Channel, Chat, MessageComposerUI, MessageList, Thread, Window } from "stream-chat-react";
+import { Channel, Chat, MessageComposer, MessageList, Thread, Window } from "stream-chat-react";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "stream-chat-react/dist/css/index.css";
@@ -34,17 +34,17 @@ function VideoCallUI({ chatClient, channel }) {
     <div className="h-full flex min-h-0 flex-col gap-3 lg:flex-row relative str-video">
       <div className="flex-1 min-h-0 flex flex-col gap-3">
         {/* Participants count badge and Chat Toggle */}
-        <div className="flex items-center justify-between gap-2 bg-base-100 p-3 rounded-lg shadow">
-          <div className="flex items-center gap-2">
-            <UsersIcon className="w-5 h-5 text-primary" />
-            <span className="font-semibold">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-base-100 p-2.5 sm:p-3 rounded-lg shadow">
+          <div className="flex items-center gap-2 min-w-0">
+            <UsersIcon className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-semibold truncate">
               {participantCount} {participantCount === 1 ? "participant" : "participants"}
             </span>
           </div>
           {chatClient && channel && (
             <button
               onClick={() => setIsChatOpen(!isChatOpen)}
-              className={`btn btn-sm gap-2 ${isChatOpen ? "btn-primary" : "btn-ghost"}`}
+              className={`btn btn-sm gap-2 shrink-0 ${isChatOpen ? "btn-primary" : "btn-ghost"}`}
               title={isChatOpen ? "Hide chat" : "Show chat"}
             >
               <MessageSquareIcon className="size-4" />
@@ -53,11 +53,11 @@ function VideoCallUI({ chatClient, channel }) {
           )}
         </div>
 
-        <div className="flex-1 min-h-48 bg-base-300 rounded-lg overflow-hidden relative">
+        <div className="flex-1 min-h-[220px] sm:min-h-48 bg-base-300 rounded-lg overflow-hidden relative">
           <SpeakerLayout />
         </div>
 
-        <div className="bg-base-100 p-3 rounded-lg shadow flex justify-center">
+        <div className="bg-base-100 p-2 sm:p-3 rounded-lg shadow flex flex-wrap items-center justify-center gap-2 overflow-x-auto">
           <CallControls onLeave={() => navigate("/dashboard")} />
         </div>
       </div>
@@ -67,7 +67,9 @@ function VideoCallUI({ chatClient, channel }) {
       {chatClient && channel && (
         <div
           className={`flex shrink-0 flex-col rounded-lg shadow overflow-hidden bg-[#272a30] transition-all duration-300 ease-in-out ${
-            isChatOpen ? "w-full h-64 opacity-100 lg:w-80 lg:h-auto" : "w-0 h-0 opacity-0 lg:h-auto"
+            isChatOpen
+              ? "w-full h-64 max-h-[45vh] opacity-100 lg:w-80 lg:h-auto lg:max-h-none"
+              : "w-0 h-0 opacity-0 lg:h-auto"
           }`}
         >
           {isChatOpen && (
@@ -87,7 +89,7 @@ function VideoCallUI({ chatClient, channel }) {
                   <Channel channel={channel}>
                     <Window>
                       <MessageList />
-                      <MessageComposerUI />
+                      <MessageComposer />
                     </Window>
                     <Thread />
                   </Channel>
